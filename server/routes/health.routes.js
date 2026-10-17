@@ -1,10 +1,10 @@
-import { Router } from 'express';
-import mongoose from 'mongoose';
+import { Router } from 'express'
+import mongoose from 'mongoose'
 
-const router = Router();
+const router = Router()
 
 router.get('/', (req, res) => {
-  const isConnected = mongoose.connection.readyState === 1;
+  const isConnected = mongoose.connection.readyState === 1
 
   res.status(200).json({
     success: true,
@@ -14,7 +14,7 @@ router.get('/', (req, res) => {
       uptimeSeconds: Math.round(process.uptime()),
       timestamp: new Date().toISOString(),
     },
-  });
-});
+  })
+})
 
-export default router;
+export default router

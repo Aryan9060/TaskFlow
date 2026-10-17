@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext.jsx'
 
 const navItems = [
   { to: '/', label: 'Dashboard', end: true },
@@ -16,6 +17,13 @@ const navItems = [
 
 export default function AppLayout() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+
+  const handleLogout = async () => {
+    await logout()
+    navigate('/login', { replace: true })
+  }
 
   return (
     <div className="app-shell">
@@ -41,7 +49,13 @@ export default function AppLayout() {
           ))}
         </nav>
 
-        <p className="sidebar-footer">Phase 1 build</p>
+        <div className="sidebar-user">
+          <p className="user-name">{user?.name}</p>
+          <p className="user-email">{user?.email}</p>
+          <button type="button" className="btn-logout" onClick={handleLogout}>
+            Log out
+          </button>
+        </div>
       </aside>
 
       <div className="app-main">

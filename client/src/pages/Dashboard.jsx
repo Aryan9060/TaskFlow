@@ -1,3 +1,4 @@
+import { useAuth } from '../context/AuthContext.jsx'
 import { useApiHealth } from '../hooks/useApiHealth.js'
 
 const featureCards = [
@@ -8,12 +9,13 @@ const featureCards = [
 ]
 
 export default function Dashboard() {
+  const { user } = useAuth()
   const { loading, online, db } = useApiHealth()
 
   return (
     <section>
       <div className="page-heading">
-        <h2>Welcome back</h2>
+        <h2>Welcome back, {user.name}</h2>
         <p>Your study command centre. Real data arrives in Phase 3.</p>
       </div>
 

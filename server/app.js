@@ -1,30 +1,36 @@
-import express from 'express';
-import cors from 'cors';
-import healthRoutes from './routes/health.routes.js';
+import express from 'express'
+import cors from 'cors'
+import cookieParser from 'cookie-parser'
+import healthRoutes from './routes/health.routes.js'
+import authRoutes from './routes/auth.routes.js'
+import userRoutes from './routes/user.routes.js'
 
-const app = express();
+const app = express()
 
-app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
-app.use(express.json());
+app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }))
+app.use(express.json())
+app.use(cookieParser())
 
-app.use('/api/health', healthRoutes);
+app.use('/api/health', healthRoutes)
+app.use('/api/auth', authRoutes)
+app.use('/api/users', userRoutes)
 
 // 404 handler for any unmatched route
 app.use((req, res) => {
   res.status(404).json({
     success: false,
     message: `Route not found: ${req.method} ${req.originalUrl}`,
-  });
-});
+  })
+})
 
 // Centralized error handler (Express forwards any thrown error here)
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
-  console.error(err);
+  console.error(err)
   res.status(err.status || 500).json({
     success: false,
     message: err.message || 'Internal server error',
-  });
-});
+  })
+})
 
-export default app;
+export default app

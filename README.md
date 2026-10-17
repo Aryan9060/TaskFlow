@@ -69,15 +69,17 @@ Prerequisites: Node.js 20+, Git, Docker (for the dev MongoDB container).
 
 ## Environment variables (server/.env)
 
-| Variable      | Purpose                                        |
-| ------------- | ---------------------------------------------- |
-| `PORT`        | Port the Express server listens on             |
-| `MONGO_URI`   | MongoDB connection string                      |
-| `NODE_ENV`    | `development` or `production`                  |
-| `CLIENT_URL`  | Frontend origin, used by the CORS middleware   |
+| Variable      | Purpose                                              |
+| ------------- | ---------------------------------------------------- |
+| `PORT`        | Port the Express server listens on                   |
+| `MONGO_URI`   | MongoDB connection string                            |
+| `NODE_ENV`    | `development` or `production`                        |
+| `CLIENT_URL`  | Frontend origin, used by the CORS middleware         |
+| `JWT_SECRET`  | Secret key used to sign session tokens               |
 
 Never commit `.env`. A safe template lives in `.env.example`.
 
 ## Development status
 
 - [x] Phase 1 — Project setup and foundation
+- [x] Phase 2 — Authentication and profile
