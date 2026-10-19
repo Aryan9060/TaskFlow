@@ -12,6 +12,7 @@ import Assignments from './pages/Assignments.jsx'
 import Exams from './pages/Exams.jsx'
 import Calendar from './pages/Calendar.jsx'
 import Timer from './pages/Timer.jsx'
+import Analytics from './pages/Analytics.jsx'
 import PlaceholderPage from './pages/PlaceholderPage.jsx'
 import NotFound from './pages/NotFound.jsx'
 
@@ -34,7 +35,7 @@ export default function App() {
           <Route path="exams" element={<Exams />} />
           <Route path="calendar" element={<Calendar />} />
           <Route path="timer" element={<Timer />} />
-          <Route path="analytics" element={<PlaceholderPage title="Analytics & Goals" phase={8} />} />
+          <Route path="analytics" element={<Analytics />} />
           <Route path="profile" element={<Profile />} />
           <Route path="settings" element={<PlaceholderPage title="Settings" phase={9} />} />
         </Route>

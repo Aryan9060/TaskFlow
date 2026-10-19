@@ -25,6 +25,12 @@ export const updateProfileSchema = z.object({
     .object({
       pomodoroFocusMinutes: z.number().int().min(5).max(120).optional(),
       pomodoroBreakMinutes: z.number().int().min(1).max(60).optional(),
+      weeklyGoalMinutes: z
+        .number({ error: 'Weekly goal must be a number of minutes.' })
+        .int('Weekly goal must be a whole number of minutes.')
+        .min(60, 'Weekly goal must be at least 1 hour.')
+        .max(10080, 'Weekly goal cannot exceed 168 hours.')
+        .optional(),
     })
     .optional(),
 })

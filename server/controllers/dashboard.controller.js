@@ -2,19 +2,9 @@ import Task from '../models/Task.js'
 import Exam from '../models/Exam.js'
 import StudySession from '../models/StudySession.js'
 import Subject from '../models/Subject.js'
-import { startOfToday, daysAgo, dayKey } from '../utils/dates.js'
+import { startOfToday, daysAgo, dayKey, buildDaySeries } from '../utils/dates.js'
 
 const SUBJECT_SNAPSHOT = 'name code color'
-
-// Builds an empty 7-day series ending today: [{ day: 'Mon', date: '2026-10-18', minutes: 0 }, ...]
-function buildWeekSeries() {
-  const series = []
-  for (let offset = 6; offset >= 0; offset -= 1) {
-    const date = daysAgo(offset)
-    series.push({ day: date.toLocaleDateString('en-US', { weekday: 'short' }), date: dayKey(date), minutes: 0 })
-  }
-  return series
-}
 
 // GET /api/dashboard/summary — everything the dashboard renders, scoped to
 // the signed-in user and fetched in one round of parallel queries.
@@ -47,7 +37,7 @@ export async function getDashboardSummary(req, res) {
     ])
 
   // Bucket session minutes onto calendar days for the weekly chart
-  const weekly = buildWeekSeries()
+  const weekly = buildDaySeries(7)
   const indexByDate = new Map(weekly.map((entry) => [entry.date, entry]))
   for (const session of weekSessions) {
     const entry = indexByDate.get(dayKey(session.startedAt))

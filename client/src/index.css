@@ -1298,6 +1298,118 @@ h3 {
   white-space: nowrap;
 }
 
+/* ---------- Analytics & goals ---------- */
+
+.btn-small {
+  padding: 0.25rem 0.7rem;
+  font-size: 0.9rem;
+}
+
+.card-title-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.goal-card {
+  margin-top: 1rem;
+}
+
+.goal-heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.8rem;
+}
+
+.goal-heading h3 {
+  margin-bottom: 0.15rem;
+}
+
+.goal-track {
+  height: 22px;
+}
+
+.goal-met {
+  background-color: var(--ok-text);
+}
+
+.goal-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.35rem;
+  font-family: var(--font-label);
+  font-size: 0.76rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+}
+
+.goal-notice {
+  margin-top: 0.8rem;
+  margin-bottom: 0;
+}
+
+.goal-form {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 2px dashed var(--ink);
+}
+
+.goal-form .form-group {
+  max-width: 240px;
+}
+
+.distribution-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.distribution-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.distribution-minutes {
+  font-family: var(--font-label);
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.distribution-track {
+  height: 12px;
+}
+
+.completion-numbers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.9rem;
+  margin: 0.5rem 0 0.7rem;
+  color: var(--ink-soft);
+}
+
+.completion-numbers strong {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: var(--ink);
+  margin-right: 0.15rem;
+}
+
+.completion-footnote {
+  margin-top: 0.55rem;
+  margin-bottom: 0;
+}
+
 /* ---------- Mobile: off-canvas sidebar ---------- */
 
 .menu-button {

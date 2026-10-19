@@ -4,6 +4,8 @@ const preferenceSchema = new mongoose.Schema(
   {
     pomodoroFocusMinutes: { type: Number, default: 25, min: 5, max: 120 },
     pomodoroBreakMinutes: { type: Number, default: 5, min: 1, max: 60 },
+    // Default target is 10 hours of focused study per week.
+    weeklyGoalMinutes: { type: Number, default: 600, min: 60, max: 10080 },
   },
   { _id: false }
 )

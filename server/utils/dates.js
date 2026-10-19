@@ -27,3 +27,18 @@ export function dayKey(date) {
   const day = String(date.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
 }
+
+// Builds an empty chart series for the last n days, oldest first:
+// [{ day: 'Mon', date: '2026-10-18', minutes: 0 }, ...]
+export function buildDaySeries(numberOfDays) {
+  const series = []
+  for (let offset = numberOfDays - 1; offset >= 0; offset -= 1) {
+    const date = daysAgo(offset)
+    series.push({
+      day: date.toLocaleDateString('en-US', { weekday: 'short' }),
+      date: dayKey(date),
+      minutes: 0,
+    })
+  }
+  return series
+}

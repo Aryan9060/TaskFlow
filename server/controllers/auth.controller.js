@@ -72,6 +72,9 @@ export async function updateProfile(req, res) {
   if (preferences?.pomodoroBreakMinutes !== undefined) {
     req.user.preferences.pomodoroBreakMinutes = preferences.pomodoroBreakMinutes
   }
+  if (preferences?.weeklyGoalMinutes !== undefined) {
+    req.user.preferences.weeklyGoalMinutes = preferences.weeklyGoalMinutes
+  }
 
   await req.user.save()
 
