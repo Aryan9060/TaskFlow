@@ -6,6 +6,20 @@ wrapped in a hand-drawn "study, on purpose" interface with four switchable theme
 
 Built as an MCA portfolio project.
 
+## Screenshots
+
+![TaskFlow dashboard](docs/screenshots/dashboard.png)
+
+| Tasks | Exam planner with revision plan |
+| --- | --- |
+| ![Tasks](docs/screenshots/tasks.png) | ![Exams](docs/screenshots/exams.png) |
+
+![Analytics and goals](docs/screenshots/analytics.png)
+
+| Mobile dashboard | Midnight theme |
+| --- | --- |
+| ![Mobile dashboard](docs/screenshots/dashboard-mobile.png) | ![Midnight theme](docs/screenshots/dashboard-midnight.png) |
+
 ## Features
 
 - **Accounts** — register, log in, log out, profile and study preferences.
@@ -237,12 +251,88 @@ exactly like a missing record (404).
   are hidden in production.
 - Cross-origin requests are restricted to `CLIENT_URL`.
 
-## Production notes
+## Deployment
 
-- Set `NODE_ENV=production`, a strong `JWT_SECRET`, an Atlas `MONGO_URI`, and the deployed
-  frontend URL as `CLIENT_URL`.
-- Build the client with `npm run build` and serve `client/dist` from a static host, with
-  `/api` proxied to the API server (or point `client/src/services/api.js` at the API origin).
-- HTTPS is required for secure cookies; the API sets `trust proxy` in production so rate
-  limiting sees the real client IP.
-- Update `CLIENT_URL` if the frontend domain changes, otherwise CORS blocks the requests.
+The app is deployment-ready but this repository does not include live hosting credentials.
+The steps below describe a free-tier setup with MongoDB Atlas + Render (API) + Vercel
+(frontend), or any equivalent hosts.
+
+### 1. Production database
+
+1. Create a free MongoDB Atlas cluster and a database named `taskflow`.
+2. Create a database user with read/write access.
+3. Allow the API host's IPs (or `0.0.0.0/0` for a free-tier host with rotating IPs).
+4. Copy the SRV connection string into the API's `MONGO_URI`.
+
+### 2. API host (Render example)
+
+- Root directory: `server`
+- Build command: `npm install`
+- Start command: `npm start`
+- Health check path: `/api/health`
+- Environment variables:
+
+| Variable            | Value                                                         |
+| ------------------- | ------------------------------------------------------------- |
+| `MONGO_URI`         | Atlas SRV connection string                                   |
+| `JWT_SECRET`        | Long random value, e.g. `openssl rand -hex 32`                |
+| `NODE_ENV`          | `production`                                                  |
+| `CLIENT_URL`        | Deployed frontend origin (comma-separate preview URLs if needed) |
+| `COOKIE_SAME_SITE`  | `none` when frontend/API are on different sites, else `lax`   |
+| `PORT`              | Leave unset; the host injects it                              |
+
+`NODE_ENV=production` enables secure cookies and `trust proxy`. If the frontend and API are
+on different domains, `COOKIE_SAME_SITE=none` is required and both must use HTTPS — the
+browser will not store cross-site cookies otherwise.
+
+### 3. Frontend host (Vercel example)
+
+- Root directory: `client`
+- Build command: `npm run build`
+- Output directory: `dist`
+- Environment variable: `VITE_API_URL=https://<api-host>/api` (full URL, no trailing slash)
+
+Set the environment variable **before** building; Vite inlines it at build time. After the
+frontend deploys, put its exact origin into `CLIENT_URL` on the API and redeploy/restart the
+API if needed.
+
+### 4. Verify the deployment
+
+- [ ] `https://<api-host>/api/health` reports `db: "connected"`.
+- [ ] Registration/login succeeds and the `taskflow_token` cookie shows `HttpOnly`,
+      `Secure`, and the expected `SameSite` value in DevTools.
+- [ ] A hard refresh still shows the signed-in user.
+- [ ] Browser console has no CORS or 401 loop errors.
+- [ ] Create a task, complete a timer session, and export a CSV.
+- [ ] Set `CLIENT_URL` to the wrong origin temporarily and confirm CORS blocks it — then
+      restore it.
+
+## Portfolio walkthrough
+
+A five-minute demo order that touches every part of the stack:
+
+1. **Register** a fresh account, then show the empty states and friendly onboarding.
+2. **Create a subject**, then a task and an assignment with priorities and due dates.
+3. Add an **exam**, then open its generated revision plan.
+4. Run a short **timer** session (set a 5-minute focus block in Profile to demo quickly) and
+   watch the dashboard and analytics update.
+5. Show **filters/search**, complete a recurring task, and export a CSV.
+6. Switch **themes**, resize to a phone width, and log out.
+
+Talking points for interviews:
+
+- **Auth:** JWT is stored in an httpOnly cookie instead of localStorage, so JavaScript (and
+  therefore XSS) cannot read it; SameSite and rate limiting reduce CSRF/brute-force risk.
+- **Ownership:** every query includes `owner: req.user._id`, and another user's record
+  returns 404 rather than 403 so resource existence is not leaked.
+- **Validation:** Zod validates on the server; the client adds HTML validation for fast
+  feedback but never replaces server checks.
+- **Recurrence:** completing a task spawns its successor and records `nextOccurrenceId`, so
+  re-completing cannot duplicate the chain; monthly dates clamp instead of overflowing.
+- **Analytics:** Mongo aggregations group subject/task totals while JavaScript buckets the
+  local-time day series, avoiding timezone drift in charts.
+- **Theming:** CSS custom properties plus a `data-theme` attribute keep four themes in one
+  stylesheet with no component rewrites.
+- **Trade-offs:** the production bundle is a single chunk (Recharts is the largest part);
+  the next improvement would be route-level lazy loading and pagination for very large task
+  lists.

@@ -112,6 +112,7 @@ test('logout clears the session cookie and the user becomes anonymous', async ()
 
   const clearedCookie = logout.headers['set-cookie']?.[0] || ''
   assert.match(clearedCookie, /taskflow_token=;/)
+  assert.match(clearedCookie, /SameSite=Lax/i)
 
   const profile = await agent.get('/api/users/me')
   assert.equal(profile.status, 401)

@@ -10,14 +10,23 @@ function buildToken(userId) {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: `${TOKEN_DAYS}d` })
 }
 
+// Shared cookie attributes so setting and clearing the session always match.
+// Deployments where the frontend and API use different sites must set
+// COOKIE_SAME_SITE=none (requires HTTPS); same-site deployments keep lax.
+function authCookieOptions() {
+  return {
+    httpOnly: true, // JavaScript cannot read this cookie — XSS cannot steal it
+    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+    sameSite: process.env.COOKIE_SAME_SITE || 'lax', // cross-site POST protection
+    path: '/',
+  }
+}
+
 // Stores the JWT in an httpOnly cookie so client JavaScript cannot read it.
 function setAuthCookie(res, token) {
   res.cookie(COOKIE_NAME, token, {
-    httpOnly: true, // JavaScript cannot read this cookie — XSS cannot steal it
-    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-    sameSite: 'lax', // browser withholds the cookie on cross-site POSTs (CSRF mitigation)
+    ...authCookieOptions(),
     maxAge: TOKEN_DAYS * 24 * 60 * 60 * 1000,
-    path: '/',
   })
 }
 
@@ -60,7 +69,7 @@ export async function login(req, res) {
 
 // POST /api/auth/logout — expires the session cookie on the client.
 export async function logout(req, res) {
-  res.clearCookie(COOKIE_NAME, { path: '/' })
+  res.clearCookie(COOKIE_NAME, authCookieOptions())
   res.status(200).json({ success: true, message: 'Logged out successfully.' })
 }
 

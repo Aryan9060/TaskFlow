@@ -24,8 +24,15 @@ if (process.env.NODE_ENV === 'production') {
   app.set('trust proxy', 1)
 }
 
+// Allow one or more frontend origins (comma-separated CLIENT_URL), which
+// covers production plus preview deployments. Credentials enable cookies.
+const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:5173')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean)
+
 app.use(helmet())
-app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }))
+app.use(cors({ origin: allowedOrigins, credentials: true }))
 app.use(express.json({ limit: '100kb' }))
 app.use(cookieParser())
 app.use(sanitizeBody)

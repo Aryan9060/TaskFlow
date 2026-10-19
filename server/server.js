@@ -8,6 +8,11 @@ const PORT = process.env.PORT || 5000
 
 // Connects to MongoDB, starts the HTTP server, and wires graceful shutdown.
 async function startServer() {
+  if (!process.env.JWT_SECRET) {
+    console.error('JWT_SECRET is not defined. Add it to server/.env before starting.')
+    process.exit(1)
+  }
+
   try {
     await connectDB()
 
