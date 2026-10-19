@@ -253,9 +253,8 @@ exactly like a missing record (404).
 
 ## Deployment
 
-The app is deployment-ready but this repository does not include live hosting credentials.
-The steps below describe a free-tier setup with MongoDB Atlas + Render (API) + Vercel
-(frontend), or any equivalent hosts.
+The app is deployment-ready. The steps below describe a free-tier setup with MongoDB
+Atlas + Render (API) + Vercel (frontend), or any equivalent hosts.
 
 ### 1. Production database
 
