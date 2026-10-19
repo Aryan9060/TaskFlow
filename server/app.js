@@ -1,6 +1,8 @@
 import express from 'express'
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
+import helmet from 'helmet'
+import { sanitizeBody } from './middleware/sanitize.middleware.js'
 import healthRoutes from './routes/health.routes.js'
 import authRoutes from './routes/auth.routes.js'
 import userRoutes from './routes/user.routes.js'
@@ -16,9 +18,17 @@ import exportRoutes from './routes/export.routes.js'
 
 const app = express()
 
+// Behind a hosting proxy (Render, Railway, etc.) trust the first hop so
+// rate limiting and secure cookies see the real client IP and protocol.
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1)
+}
+
+app.use(helmet())
 app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }))
-app.use(express.json())
+app.use(express.json({ limit: '100kb' }))
 app.use(cookieParser())
+app.use(sanitizeBody)
 
 app.use('/api/health', healthRoutes)
 app.use('/api/auth', authRoutes)
@@ -41,13 +51,42 @@ app.use((req, res) => {
   })
 })
 
-// Centralized error handler (Express forwards any thrown error here)
+// Centralized error handler: every thrown/rejected error lands here.
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
-  console.error(err)
-  res.status(err.status || 500).json({
+  let status = err.status || err.statusCode || 500
+  let message = err.message
+
+  // Malformed or oversized JSON bodies rejected by express.json()
+  if (err.type === 'entity.parse.failed') {
+    status = 400
+    message = 'Invalid JSON payload.'
+  } else if (err.type === 'entity.too.large') {
+    status = 413
+    message = 'Request body is too large.'
+  } else if (err.name === 'CastError') {
+    // Invalid ObjectId in a URL parameter behaves like a missing record.
+    status = 404
+    message = 'Resource not found.'
+  } else if (err.name === 'ValidationError') {
+    status = 400
+    message = Object.values(err.errors)
+      .map((item) => item.message)
+      .join(' ')
+  } else if (err.code === 11000) {
+    status = 409
+    message = 'That record already exists.'
+  }
+
+  // Log only unexpected failures; 4xx errors are part of normal API traffic.
+  if (status >= 500) console.error(err)
+
+  res.status(status).json({
     success: false,
-    message: err.message || 'Internal server error',
+    message:
+      status >= 500 && process.env.NODE_ENV === 'production'
+        ? 'Internal server error.'
+        : message || 'Internal server error.',
   })
 })
 

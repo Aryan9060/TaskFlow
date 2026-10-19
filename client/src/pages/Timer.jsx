@@ -100,6 +100,7 @@ export default function Timer() {
   // timestamp means the elapsed time survives either way.
   useEffect(() => {
     if (!timer.running) return
+    // Native beforeunload prompt while a focus/break block is running.
     const handler = (event) => {
       event.preventDefault()
       event.returnValue = ''

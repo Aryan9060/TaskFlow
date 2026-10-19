@@ -5,10 +5,12 @@ import User from '../models/User.js'
 const COOKIE_NAME = 'taskflow_token'
 const TOKEN_DAYS = 7
 
+// Signs a 7-day JWT whose payload identifies the user.
 function buildToken(userId) {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: `${TOKEN_DAYS}d` })
 }
 
+// Stores the JWT in an httpOnly cookie so client JavaScript cannot read it.
 function setAuthCookie(res, token) {
   res.cookie(COOKIE_NAME, token, {
     httpOnly: true, // JavaScript cannot read this cookie — XSS cannot steal it
@@ -19,6 +21,8 @@ function setAuthCookie(res, token) {
   })
 }
 
+// POST /api/auth/register — creates an account with a hashed password and
+// starts the session immediately.
 export async function register(req, res) {
   const { name, email, password } = req.body
 
@@ -36,6 +40,7 @@ export async function register(req, res) {
   res.status(201).json({ success: true, message: 'Account created successfully.', data: { user: user.toSafeObject() } })
 }
 
+// POST /api/auth/login — checks credentials and issues a fresh session cookie.
 export async function login(req, res) {
   const { email, password } = req.body
 
@@ -53,15 +58,18 @@ export async function login(req, res) {
   res.status(200).json({ success: true, message: 'Logged in successfully.', data: { user: user.toSafeObject() } })
 }
 
+// POST /api/auth/logout — expires the session cookie on the client.
 export async function logout(req, res) {
   res.clearCookie(COOKIE_NAME, { path: '/' })
   res.status(200).json({ success: true, message: 'Logged out successfully.' })
 }
 
+// GET /api/users/me — returns the profile loaded by the protect middleware.
 export async function getMe(req, res) {
   res.status(200).json({ success: true, data: { user: req.user.toSafeObject() } })
 }
 
+// PATCH /api/users/me — updates the name and timer/goal preferences.
 export async function updateProfile(req, res) {
   const { name, preferences } = req.body
 

@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 
+// Login screen: authenticates and returns the user to the page that
+// redirected them here (or the dashboard by default).
 export default function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
@@ -11,10 +13,12 @@ export default function Login() {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
+  // Mirrors one input's value into the form state.
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
+  // Submits credentials, then navigates or shows the server error.
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')

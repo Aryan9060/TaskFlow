@@ -9,6 +9,7 @@ const api = axios.create({
   withCredentials: true,
 })
 
+// Fetches the API health payload (server + database status).
 export async function getHealth() {
   const response = await api.get('/health')
   return response.data

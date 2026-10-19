@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getHealth } from '../services/api.js'
 
+// Pings /api/health once on mount so the shell can show API/DB status.
 export function useApiHealth() {
   const [status, setStatus] = useState({ loading: true, online: false, db: 'unknown' })
 

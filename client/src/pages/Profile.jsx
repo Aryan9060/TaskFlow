@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '../context/AuthContext.jsx'
 import { updateMe } from '../services/auth.js'
 
+// Profile screen: name plus Pomodoro focus/break preferences.
 export default function Profile() {
   const { user, updateUser } = useAuth()
 
@@ -14,10 +15,12 @@ export default function Profile() {
   const [success, setSuccess] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
+  // Mirrors one input's value into the form state.
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
+  // Saves the profile and refreshes the user cached in AuthContext.
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')

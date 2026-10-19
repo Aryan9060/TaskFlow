@@ -172,6 +172,7 @@ export default function Analytics() {
     return 4
   }
 
+  // Formats milestone values differently for minute-based and count badges.
   const badgeValue = (badge, value) =>
     badge.unit === 'minutes' ? formatMinutes(value) : String(value)
 

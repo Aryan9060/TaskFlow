@@ -10,7 +10,7 @@ export default function ThemeSwitcher() {
   )
   const pickerRef = useRef(null)
 
-  // Closes the menu when clicking anywhere outside of it.
+  // Closes the menu on an outside click or the Escape key.
   useEffect(() => {
     if (!open) return
     const handlePointer = (event) => {
@@ -18,8 +18,15 @@ export default function ThemeSwitcher() {
         setOpen(false)
       }
     }
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setOpen(false)
+    }
     document.addEventListener('mousedown', handlePointer)
-    return () => document.removeEventListener('mousedown', handlePointer)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handlePointer)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
   }, [open])
 
   // Applies the chosen theme and closes the menu.

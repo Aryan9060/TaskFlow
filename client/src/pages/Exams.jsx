@@ -37,6 +37,7 @@ function buildRevisionPlan(exam) {
 function toDraft(exam) {
   if (!exam?._id) return EMPTY_FORM
   const date = new Date(exam.examDate)
+  // Zero-pads a date/time part for the native input format.
   const pad = (value) => String(value).padStart(2, '0')
   return {
     title: exam.title || '',
@@ -74,6 +75,7 @@ function ExamForm({ initial, subjects, saving, error, onSubmit, onCancel }) {
     setForm(toDraft(initial))
   }, [initial])
 
+  // Mirrors one input's value into the form state.
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
@@ -227,11 +229,13 @@ export default function Exams() {
       .catch(() => setSubjects([]))
   }, [])
 
+  // Opens the exam form in create mode.
   const openCreate = () => {
     setFormError('')
     setFormState({ open: true, editing: { ...EMPTY_FORM } })
   }
 
+  // Opens the exam form pre-filled with an existing exam.
   const openEdit = (exam) => {
     setFormError('')
     setFormState({ open: true, editing: exam })

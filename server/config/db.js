@@ -1,5 +1,7 @@
 import mongoose from 'mongoose'
 
+// Connects Mongoose to MongoDB and logs the key lifecycle events.
+// Called once at startup; a failed connection stops the server (see server.js).
 export async function connectDB() {
   const uri = process.env.MONGO_URI
 

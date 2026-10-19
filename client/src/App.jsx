@@ -16,6 +16,7 @@ import Analytics from './pages/Analytics.jsx'
 import Settings from './pages/Settings.jsx'
 import NotFound from './pages/NotFound.jsx'
 
+// Route table: public auth screens, private app pages, and a catch-all 404.
 export default function App() {
   return (
     <Routes>

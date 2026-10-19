@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 
+// Fallback screen for any route that does not exist.
 export default function NotFound() {
   return (
     <section className="card placeholder-page">

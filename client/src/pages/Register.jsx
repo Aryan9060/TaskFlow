@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 
+// Registration screen with a client-side password confirmation check.
 export default function Register() {
   const { register } = useAuth()
   const navigate = useNavigate()
@@ -10,10 +11,12 @@ export default function Register() {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
+  // Mirrors one input's value into the form state.
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
+  // Validates password confirmation before creating the account.
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')

@@ -16,10 +16,12 @@ function SubjectForm({ initial, saving, error, onSubmit, onCancel }) {
     setForm(initial)
   }, [initial])
 
+  // Mirrors one input's value into the form state.
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
+  // Hands the form values to the page, which performs the API call.
   const handleSubmit = (e) => {
     e.preventDefault()
     onSubmit(form)
