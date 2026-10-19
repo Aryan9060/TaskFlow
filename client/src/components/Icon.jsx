@@ -188,6 +188,8 @@ const ICONS = {
       <path d="M17 10.8h.01" />
     </>
   ),
+  chevronLeft: <path d="M14.4 5.1 8 12l6.4 6.9" />,
+  chevronRight: <path d="M9.6 5.1 16 12l-6.4 6.9" />,
 }
 
 // Renders a hand-drawn stroke icon by name. All icons inherit the parent's

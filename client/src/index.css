@@ -808,6 +808,223 @@ h3 {
   color: var(--ink-soft);
 }
 
+/* ---------- Exams ---------- */
+
+.section-label {
+  font-family: var(--font-label);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 0.4rem 0 0.55rem;
+}
+
+.exam-row {
+  flex-wrap: wrap;
+}
+
+.exam-date {
+  width: 52px;
+  padding: 0.15rem 0;
+  flex-shrink: 0;
+  text-align: center;
+  background-color: var(--accent);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-sketch-sm);
+}
+
+.exam-day {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.65rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.exam-month {
+  font-family: var(--font-label);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ---------- Calendar ---------- */
+
+.calendar-month {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 0;
+  min-width: 170px;
+  text-align: center;
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+  font-family: var(--font-label);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--ink-soft);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.4rem;
+}
+
+.calendar-day {
+  min-width: 0;
+  min-height: 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.35rem;
+  text-align: left;
+  font-family: var(--font-body);
+  color: var(--ink);
+  background-color: var(--paper-raised);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-sketch-sm);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.calendar-day:hover {
+  background-color: var(--accent-soft);
+}
+
+.calendar-day.outside {
+  opacity: 0.45;
+  border-style: dashed;
+}
+
+.calendar-day.selected {
+  box-shadow: 3px 3px 0 var(--accent);
+}
+
+.calendar-day-number {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.calendar-day.today .calendar-day-number {
+  background-color: var(--accent);
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+}
+
+.event-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.1rem 0.3rem;
+  font-size: 0.72rem;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  border: 1.5px solid var(--ink);
+  border-radius: 6px 2px 7px 3px / 3px 7px 2px 6px;
+}
+
+.event-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.event-exam {
+  background-color: var(--danger-bg);
+}
+
+.event-assignment {
+  background-color: var(--info-bg);
+}
+
+.event-task {
+  background-color: var(--accent-soft);
+}
+
+.event-dot {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+}
+
+.event-exam .event-dot {
+  background-color: var(--danger-text);
+}
+
+.event-assignment .event-dot {
+  background-color: var(--info-text);
+}
+
+.event-task .event-dot {
+  background-color: var(--accent);
+}
+
+.event-dot-exam {
+  background-color: var(--danger-text);
+}
+
+.event-dot-assignment {
+  background-color: var(--info-text);
+}
+
+.event-dot-task {
+  background-color: var(--accent);
+}
+
+.event-more {
+  font-size: 0.7rem;
+  color: var(--ink-soft);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.legend-dot {
+  width: 11px;
+  height: 11px;
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+}
+
+.legend-exam {
+  background-color: var(--danger-text);
+}
+
+.legend-assignment {
+  background-color: var(--info-text);
+}
+
+.legend-task {
+  background-color: var(--accent);
+}
+
 .empty-state {
   border: 2px dashed var(--ink);
   border-radius: var(--radius-sketch);
@@ -1073,6 +1290,35 @@ h3 {
   .status-card {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .calendar-day {
+    min-height: 60px;
+    padding: 0.25rem;
+    gap: 2px;
+  }
+
+  .calendar-day-number {
+    width: 20px;
+    height: 20px;
+    font-size: 0.8rem;
+  }
+
+  .event-chip {
+    padding: 0;
+    border: none;
+    background: transparent;
+    justify-content: center;
+  }
+
+  .event-label,
+  .event-more {
+    display: none;
+  }
+
+  .calendar-month {
+    font-size: 1.4rem;
+    min-width: 130px;
   }
 }
 

@@ -1,5 +1,5 @@
 import Task from '../models/Task.js'
-import Subject from '../models/Subject.js'
+import { validateOwnedSubject } from '../services/subject.service.js'
 
 // Sorting ranks keep priority and status in human order instead of the
 // alphabetical order a plain Mongo sort would give ("high, low, medium").
@@ -36,16 +36,6 @@ function compareTasks(a, b, sortKey, order) {
   return (new Date(a.dueDate) - new Date(b.dueDate)) * direction
 }
 
-// Ensures a task only links to a subject the same user owns.
-// Returns an error message, or null when the subject is valid/empty.
-async function validateSubject(ownerId, subjectId) {
-  if (!subjectId) return null
-
-  const subject = await Subject.findOne({ _id: subjectId, owner: ownerId })
-  if (!subject) return 'Subject not found.'
-  return null
-}
-
 // GET /api/tasks — supports kind, status, priority, subject, search,
 // sort and order query parameters. Every query stays scoped to the owner.
 export async function listTasks(req, res) {
@@ -73,7 +63,7 @@ export async function listTasks(req, res) {
 
 // POST /api/tasks — create a task or assignment for the signed-in user.
 export async function createTask(req, res) {
-  const subjectError = await validateSubject(req.user._id, req.body.subject)
+  const subjectError = await validateOwnedSubject(req.user._id, req.body.subject)
   if (subjectError) {
     return res.status(400).json({ success: false, message: subjectError })
   }
@@ -96,7 +86,7 @@ export async function updateTask(req, res) {
   }
 
   if ('subject' in req.body) {
-    const subjectError = await validateSubject(req.user._id, req.body.subject)
+    const subjectError = await validateOwnedSubject(req.user._id, req.body.subject)
     if (subjectError) {
       return res.status(400).json({ success: false, message: subjectError })
     }

@@ -9,6 +9,8 @@ import Profile from './pages/Profile.jsx'
 import Subjects from './pages/Subjects.jsx'
 import Tasks from './pages/Tasks.jsx'
 import Assignments from './pages/Assignments.jsx'
+import Exams from './pages/Exams.jsx'
+import Calendar from './pages/Calendar.jsx'
 import PlaceholderPage from './pages/PlaceholderPage.jsx'
 import NotFound from './pages/NotFound.jsx'
 
@@ -28,8 +30,8 @@ export default function App() {
           <Route path="tasks" element={<Tasks />} />
           <Route path="assignments" element={<Assignments />} />
           <Route path="subjects" element={<Subjects />} />
-          <Route path="exams" element={<PlaceholderPage title="Exam Planner" phase={6} />} />
-          <Route path="calendar" element={<PlaceholderPage title="Calendar" phase={6} />} />
+          <Route path="exams" element={<Exams />} />
+          <Route path="calendar" element={<Calendar />} />
           <Route path="timer" element={<PlaceholderPage title="Study Timer" phase={7} />} />
           <Route path="analytics" element={<PlaceholderPage title="Analytics & Goals" phase={8} />} />
           <Route path="profile" element={<Profile />} />

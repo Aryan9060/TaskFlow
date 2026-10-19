@@ -7,6 +7,7 @@ import userRoutes from './routes/user.routes.js'
 import dashboardRoutes from './routes/dashboard.routes.js'
 import subjectRoutes from './routes/subject.routes.js'
 import taskRoutes from './routes/task.routes.js'
+import examRoutes from './routes/exam.routes.js'
 
 const app = express()
 
@@ -20,6 +21,7 @@ app.use('/api/users', userRoutes)
 app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/subjects', subjectRoutes)
 app.use('/api/tasks', taskRoutes)
+app.use('/api/exams', examRoutes)
 
 // 404 handler for any unmatched route
 app.use((req, res) => {
