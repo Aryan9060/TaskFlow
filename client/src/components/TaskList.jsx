@@ -1,5 +1,5 @@
 import Icon from './Icon.jsx'
-import { formatMinutes, shortDate, daysUntil } from '../utils/format.js'
+import { deadlineRisk, formatMinutes, shortDate, daysUntil } from '../utils/format.js'
 
 const STATUS_META = {
   todo: { label: 'To do', className: 'badge-neutral' },
@@ -12,6 +12,8 @@ const PRIORITY_META = {
   medium: { label: 'Medium', className: 'badge-warn' },
   low: { label: 'Low', className: 'badge-neutral' },
 }
+
+const RECURRENCE_LABELS = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly' }
 
 // Shared list for tasks and assignments: overdue flags, subject chips,
 // progress badges, complete toggle, and confirmed delete.
@@ -32,6 +34,7 @@ export default function TaskList({
         const isOverdue = task.dueDate && !isDone && daysUntil(task.dueDate) < 0
         const status = STATUS_META[task.status] || STATUS_META.todo
         const priority = PRIORITY_META[task.priority] || PRIORITY_META.medium
+        const risk = deadlineRisk(task)
 
         return (
           <div className={`row-item ${isDone ? 'task-done' : ''}`} key={task._id}>
@@ -72,6 +75,16 @@ export default function TaskList({
               <p className="row-badges">
                 <span className={`badge ${status.className}`}>{status.label}</span>{' '}
                 <span className={`badge ${priority.className}`}>{priority.label}</span>
+                {RECURRENCE_LABELS[task.recurrence] && (
+                  <span className="badge badge-info badge-inline">
+                    <Icon name="refresh" size={12} /> {RECURRENCE_LABELS[task.recurrence]}
+                  </span>
+                )}
+                {risk && (
+                  <span className={`badge ${risk.className}`} title={risk.detail}>
+                    {risk.label}
+                  </span>
+                )}
               </p>
             </div>
 

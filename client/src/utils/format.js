@@ -25,6 +25,37 @@ export function shortDate(dateInput) {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
+// Rule-based deadline risk for an open task: high priority close to the
+// deadline, or more estimated work than a light schedule can absorb.
+export function deadlineRisk(task) {
+  if (task.status === 'completed' || !task.dueDate) return null
+
+  const days = daysUntil(task.dueDate)
+  if (days < 0) return null // overdue is already highlighted next to the date
+
+  const availableHours = (days + 1) * 2
+  const effortHours = (task.estimatedMinutes || 0) / 60
+
+  if (task.priority === 'high' && days <= 2) {
+    return {
+      label: 'At risk',
+      className: 'badge-danger',
+      detail: 'High priority and due within two days.',
+    }
+  }
+  if (effortHours > availableHours) {
+    return {
+      label: 'Tight deadline',
+      className: 'badge-warn',
+      detail: `About ${formatMinutes(task.estimatedMinutes)} of work with ${days + 1} day(s) left.`,
+    }
+  }
+  if (days === 0) {
+    return { label: 'Due today', className: 'badge-warn', detail: 'This is due today.' }
+  }
+  return null
+}
+
 // Date + time for exams: "Oct 24, 09:30".
 export function formatDateTime(dateInput) {
   const date = new Date(dateInput)

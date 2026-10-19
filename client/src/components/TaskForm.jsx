@@ -8,6 +8,7 @@ const EMPTY_FORM = {
   priority: 'medium',
   status: 'todo',
   estimatedMinutes: '',
+  recurrence: 'none',
 }
 
 // Converts a stored task into the flat shape the form inputs expect.
@@ -20,6 +21,7 @@ function toFormValues(task) {
     priority: task.priority || 'medium',
     status: task.status || 'todo',
     estimatedMinutes: task.estimatedMinutes ?? '',
+    recurrence: task.recurrence || 'none',
   }
 }
 
@@ -80,11 +82,14 @@ export default function TaskForm({ initial, subjects, saving, error, onSubmit, o
             </select>
           </div>
           <div className="form-group">
-            <label htmlFor="task-due">Due date (optional)</label>
+            <label htmlFor="task-due">
+              Due date {form.recurrence === 'none' ? '(optional)' : ''}
+            </label>
             <input
               id="task-due"
               name="dueDate"
               type="date"
+              required={form.recurrence !== 'none'}
               value={form.dueDate}
               onChange={handleChange}
             />
@@ -110,19 +115,40 @@ export default function TaskForm({ initial, subjects, saving, error, onSubmit, o
           </div>
         </div>
 
-        <div className="form-group">
-          <label htmlFor="task-effort">Estimated effort (minutes, optional)</label>
-          <input
-            id="task-effort"
-            name="estimatedMinutes"
-            type="number"
-            min="0"
-            max="10080"
-            step="5"
-            placeholder="e.g. 45"
-            value={form.estimatedMinutes}
-            onChange={handleChange}
-          />
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="task-recurrence">Repeat</label>
+            <select
+              id="task-recurrence"
+              name="recurrence"
+              value={form.recurrence}
+              onChange={handleChange}
+            >
+              <option value="none">Does not repeat</option>
+              <option value="daily">Every day</option>
+              <option value="weekly">Every week</option>
+              <option value="monthly">Every month</option>
+            </select>
+            {form.recurrence !== 'none' && (
+              <p className="field-hint">
+                Completing this entry schedules the next one automatically.
+              </p>
+            )}
+          </div>
+          <div className="form-group">
+            <label htmlFor="task-effort">Estimated effort (minutes, optional)</label>
+            <input
+              id="task-effort"
+              name="estimatedMinutes"
+              type="number"
+              min="0"
+              max="10080"
+              step="5"
+              placeholder="e.g. 45"
+              value={form.estimatedMinutes}
+              onChange={handleChange}
+            />
+          </div>
         </div>
 
         <div className="form-group">

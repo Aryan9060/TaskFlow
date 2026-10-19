@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useAuth } from '../context/AuthContext.jsx'
 import { getDashboard } from '../services/dashboard.js'
+import { getReminders } from '../services/reminders.js'
 import { daysUntil, formatDateTime, formatMinutes, shortDate } from '../utils/format.js'
 import Icon from '../components/Icon.jsx'
 
@@ -26,14 +27,18 @@ function StatCard({ icon, value, label, tone = '' }) {
 export default function Dashboard() {
   const { user } = useAuth()
   const [data, setData] = useState(null)
+  const [reminders, setReminders] = useState(null)
   const [error, setError] = useState('')
 
-  // Load the summary once when the page mounts.
+  // Load the summary and reminders in parallel; a reminders failure must
+  // not take the whole dashboard down.
   useEffect(() => {
     let cancelled = false
-    getDashboard()
-      .then((result) => {
-        if (!cancelled) setData(result.data)
+    Promise.all([getDashboard(), getReminders().catch(() => null)])
+      .then(([result, reminderResult]) => {
+        if (cancelled) return
+        setData(result.data)
+        setReminders(reminderResult?.data || null)
       })
       .catch(() => {
         if (!cancelled) setError('Could not load your dashboard. Is the server running?')
@@ -61,6 +66,54 @@ export default function Dashboard() {
         <h2>Welcome back, {user.name}</h2>
         <p>{stats.subjects} subject{stats.subjects === 1 ? '' : 's'} on the books — let's make today count.</p>
       </div>
+
+      {reminders && reminders.total > 0 && (
+        <div className="card reminder-strip">
+          <div className="reminder-heading">
+            <span className="stat-icon">
+              <Icon name="bell" size={19} />
+            </span>
+            <div>
+              <h3>Reminders</h3>
+              <p className="row-sub">A few things need a look soon.</p>
+            </div>
+          </div>
+
+          <div className="reminder-list">
+            {reminders.tasks.map((task) => {
+              const days = daysUntil(task.dueDate)
+              const dueLabel =
+                days < 0 ? 'Overdue' : days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : `In ${days} days`
+              return (
+                <Link
+                  key={task._id}
+                  className="reminder-item"
+                  to={task.kind === 'assignment' ? '/assignments' : '/tasks'}
+                >
+                  <span
+                    className={`badge ${days < 0 ? 'badge-danger' : days <= 1 ? 'badge-warn' : 'badge-info'}`}
+                  >
+                    {dueLabel}
+                  </span>
+                  <span className="reminder-text">{task.title}</span>
+                  {task.kind === 'assignment' && <span className="reminder-kind">assignment</span>}
+                </Link>
+              )
+            })}
+            {reminders.exams.map((exam) => {
+              const days = daysUntil(exam.examDate)
+              const when = days <= 0 ? 'Today' : days === 1 ? 'Tomorrow' : `In ${days} days`
+              return (
+                <Link key={exam._id} className="reminder-item" to="/exams">
+                  <span className="badge badge-danger">{when}</span>
+                  <span className="reminder-text">{exam.title}</span>
+                  <span className="reminder-kind">exam</span>
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="stat-grid">
         <StatCard icon="tasks" value={stats.dueToday} label="Due today" />

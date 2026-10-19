@@ -13,7 +13,7 @@ import Exams from './pages/Exams.jsx'
 import Calendar from './pages/Calendar.jsx'
 import Timer from './pages/Timer.jsx'
 import Analytics from './pages/Analytics.jsx'
-import PlaceholderPage from './pages/PlaceholderPage.jsx'
+import Settings from './pages/Settings.jsx'
 import NotFound from './pages/NotFound.jsx'
 
 export default function App() {
@@ -37,7 +37,7 @@ export default function App() {
           <Route path="timer" element={<Timer />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="profile" element={<Profile />} />
-          <Route path="settings" element={<PlaceholderPage title="Settings" phase={9} />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
       </Route>
 

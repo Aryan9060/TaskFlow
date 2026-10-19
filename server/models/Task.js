@@ -14,7 +14,10 @@ const taskSchema = new mongoose.Schema(
     dueDate: { type: Date, default: null, index: true },
     estimatedMinutes: { type: Number, min: 0, max: 10080, default: null },
     completedAt: { type: Date, default: null },
-    recurrence: { type: String, enum: ['none', 'daily', 'weekly'], default: 'none' },
+    recurrence: { type: String, enum: ['none', 'daily', 'weekly', 'monthly'], default: 'none' },
+    // Set when a completed recurring task spawns its next copy. This keeps
+    // toggling completed -> todo -> completed from duplicating the chain.
+    nextOccurrenceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Task', default: null },
   },
   { timestamps: true }
 )

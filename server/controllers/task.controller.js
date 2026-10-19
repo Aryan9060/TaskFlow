@@ -1,5 +1,6 @@
 import Task from '../models/Task.js'
 import { validateOwnedSubject } from '../services/subject.service.js'
+import { nextDueDate } from '../utils/dates.js'
 
 // Sorting ranks keep priority and status in human order instead of the
 // alphabetical order a plain Mongo sort would give ("high, low, medium").
@@ -36,6 +37,31 @@ function compareTasks(a, b, sortKey, order) {
   return (new Date(a.dueDate) - new Date(b.dueDate)) * direction
 }
 
+// Creates the next copy of a recurring task and records the link on the
+// completed task. Returns null when the task does not repeat, has no due
+// date, or already spawned its successor.
+async function scheduleNextOccurrence(task) {
+  if (task.recurrence === 'none' || !task.dueDate || task.nextOccurrenceId) return null
+
+  const nextTask = await Task.create({
+    owner: task.owner,
+    subject: task.subject,
+    kind: task.kind,
+    title: task.title,
+    description: task.description,
+    priority: task.priority,
+    dueDate: nextDueDate(task.dueDate, task.recurrence),
+    estimatedMinutes: task.estimatedMinutes,
+    recurrence: task.recurrence,
+  })
+
+  task.nextOccurrenceId = nextTask._id
+  await task.save()
+  await nextTask.populate('subject', 'name color code')
+
+  return nextTask
+}
+
 // GET /api/tasks — supports kind, status, priority, subject, search,
 // sort and order query parameters. Every query stays scoped to the owner.
 export async function listTasks(req, res) {
@@ -69,12 +95,20 @@ export async function createTask(req, res) {
   }
 
   const payload = { ...req.body, owner: req.user._id }
+
+  if (payload.recurrence && payload.recurrence !== 'none' && !payload.dueDate) {
+    return res.status(400).json({ success: false, message: 'Recurring tasks need a due date.' })
+  }
+
   if (payload.status === 'completed') payload.completedAt = new Date()
 
   const task = await Task.create(payload)
   await task.populate('subject', 'name color code')
 
-  res.status(201).json({ success: true, message: 'Task created.', data: { task } })
+  // Creating an already-completed recurring task still schedules the next one.
+  const nextOccurrence = task.status === 'completed' ? await scheduleNextOccurrence(task) : null
+
+  res.status(201).json({ success: true, message: 'Task created.', data: { task, nextOccurrence } })
 }
 
 // PATCH /api/tasks/:id — partial update. Status changes keep completedAt
@@ -92,6 +126,8 @@ export async function updateTask(req, res) {
     }
   }
 
+  const wasCompleted = task.status === 'completed'
+
   for (const field of [
     'title',
     'description',
@@ -105,6 +141,10 @@ export async function updateTask(req, res) {
     if (field in req.body) task[field] = req.body[field]
   }
 
+  if (task.recurrence !== 'none' && !task.dueDate) {
+    return res.status(400).json({ success: false, message: 'Recurring tasks need a due date.' })
+  }
+
   if ('status' in req.body) {
     task.completedAt = req.body.status === 'completed' ? task.completedAt || new Date() : null
   }
@@ -112,7 +152,12 @@ export async function updateTask(req, res) {
   await task.save()
   await task.populate('subject', 'name color code')
 
-  res.status(200).json({ success: true, message: 'Task updated.', data: { task } })
+  // Only the todo/in-progress -> completed transition spawns a successor;
+  // re-completing an already-linked task stays idempotent.
+  const justCompleted = task.status === 'completed' && !wasCompleted
+  const nextOccurrence = justCompleted ? await scheduleNextOccurrence(task) : null
+
+  res.status(200).json({ success: true, message: 'Task updated.', data: { task, nextOccurrence } })
 }
 
 // DELETE /api/tasks/:id — owner-scoped delete.

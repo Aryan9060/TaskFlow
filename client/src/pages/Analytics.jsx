@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useAuth } from '../context/AuthContext.jsx'
 import { getAnalyticsSummary } from '../services/analytics.js'
+import { getAchievements } from '../services/achievements.js'
 import { updateMe } from '../services/auth.js'
 import { formatMinutes } from '../utils/format.js'
 import Icon from '../components/Icon.jsx'
@@ -62,6 +63,7 @@ export default function Analytics() {
   const { updateUser } = useAuth()
 
   const [data, setData] = useState(null)
+  const [badges, setBadges] = useState(null)
   const [error, setError] = useState('')
   const [goalEditing, setGoalEditing] = useState(false)
   const [goalHours, setGoalHours] = useState('')
@@ -69,21 +71,30 @@ export default function Analytics() {
   const [goalNotice, setGoalNotice] = useState('')
   const [savingGoal, setSavingGoal] = useState(false)
 
-  // Loads the full summary; also reused after the goal is saved so the
-  // progress bar immediately reflects the new target.
-  const loadSummary = () =>
-    getAnalyticsSummary()
+  // Fetches the summary and badge board together so the page renders once.
+  const fetchAnalytics = () =>
+    Promise.all([getAnalyticsSummary(), getAchievements()]).then(([summary, badgeData]) => ({
+      summary: summary.data,
+      badges: badgeData.data,
+    }))
+
+  // Reused after a goal change so progress and badges stay in sync.
+  const loadAnalytics = () =>
+    fetchAnalytics()
       .then((result) => {
-        setData(result.data)
+        setData(result.summary)
+        setBadges(result.badges)
         setError('')
       })
       .catch(() => setError('Could not load analytics. Is the server running?'))
 
   useEffect(() => {
     let cancelled = false
-    getAnalyticsSummary()
+    fetchAnalytics()
       .then((result) => {
-        if (!cancelled) setData(result.data)
+        if (cancelled) return
+        setData(result.summary)
+        setBadges(result.badges)
       })
       .catch(() => {
         if (!cancelled) setError('Could not load analytics. Is the server running?')
@@ -120,7 +131,7 @@ export default function Analytics() {
       updateUser(result.data.user)
       setGoalEditing(false)
       setGoalNotice('Weekly goal updated.')
-      await loadSummary()
+      await loadAnalytics()
     } catch (err) {
       setGoalError(err.response?.data?.message || 'Could not save your goal. Please try again.')
     } finally {
@@ -132,11 +143,37 @@ export default function Analytics() {
     return <div className="alert alert-error">{error}</div>
   }
 
-  if (!data) {
+  if (!data || !badges) {
     return <div className="page-loading">Adding up your study hours...</div>
   }
 
-  const { totals, weekly, distribution, completion, goal } = data
+  const { totals, weekly, heatmap, distribution, completion, goal } = data
+  const { achievements, stats: badgeStats } = badges
+
+  // Lay the 84-day series out as Sunday-first columns of seven days.
+  const firstWeekday = heatmap.length ? new Date(`${heatmap[0].date}T00:00:00`).getDay() : 0
+  const paddedHeatmap = [...Array(firstWeekday).fill(null), ...heatmap]
+  const heatmapWeeks = []
+  for (let index = 0; index < paddedHeatmap.length; index += 7) {
+    heatmapWeeks.push(paddedHeatmap.slice(index, index + 7))
+  }
+  const heatmapMax = Math.max(1, ...heatmap.map((cell) => cell.minutes))
+  const heatmapMinutes = heatmap.reduce((sum, cell) => sum + cell.minutes, 0)
+  const activeDays = heatmap.filter((cell) => cell.minutes > 0).length
+  const earnedCount = achievements.filter((badge) => badge.earned).length
+
+  // Maps a day's minutes onto one of four ink/accent intensity levels.
+  const heatLevel = (minutes) => {
+    if (!minutes) return 0
+    const ratio = minutes / heatmapMax
+    if (ratio < 0.25) return 1
+    if (ratio < 0.5) return 2
+    if (ratio < 0.8) return 3
+    return 4
+  }
+
+  const badgeValue = (badge, value) =>
+    badge.unit === 'minutes' ? formatMinutes(value) : String(value)
 
   return (
     <section>
@@ -301,6 +338,92 @@ export default function Analytics() {
           stats={completion.assignment}
           emptyText="Add assignments and their completion rate appears here."
         />
+      </div>
+
+      <div className="card heatmap-card">
+        <div className="section-heading-row">
+          <div>
+            <h3>Consistency</h3>
+            <p className="row-sub">
+              {activeDays} active day{activeDays === 1 ? '' : 's'} in the last 12 weeks ·{' '}
+              {formatMinutes(heatmapMinutes)} studied
+            </p>
+          </div>
+          <span className="badge badge-info">{badgeStats.streakDays}-day streak</span>
+        </div>
+
+        <div
+          className="heatmap"
+          role="img"
+          aria-label={`Study heatmap for the last twelve weeks: ${activeDays} active days`}
+        >
+          {heatmapWeeks.map((week, weekIndex) => (
+            <div className="heatmap-week" key={weekIndex}>
+              {Array.from({ length: 7 }).map((_, dayIndex) => {
+                const cell = week[dayIndex]
+                if (!cell) {
+                  return <span className="heatmap-cell is-empty" key={`blank-${dayIndex}`} />
+                }
+                return (
+                  <span
+                    key={cell.date}
+                    className={`heatmap-cell heat-level-${heatLevel(cell.minutes)}`}
+                    title={`${cell.date} · ${formatMinutes(cell.minutes)}`}
+                  />
+                )
+              })}
+            </div>
+          ))}
+        </div>
+
+        <div className="heatmap-legend">
+          <span>Less</span>
+          <span className="heatmap-cell heat-level-0" />
+          <span className="heatmap-cell heat-level-1" />
+          <span className="heatmap-cell heat-level-2" />
+          <span className="heatmap-cell heat-level-3" />
+          <span className="heatmap-cell heat-level-4" />
+          <span>More</span>
+        </div>
+      </div>
+
+      <div className="card achievements-card">
+        <div className="section-heading-row">
+          <div>
+            <h3>Milestones</h3>
+            <p className="row-sub">Small rules, earned by actual work.</p>
+          </div>
+          <span className="badge badge-neutral">
+            {earnedCount} of {achievements.length} earned
+          </span>
+        </div>
+
+        <div className="achievement-grid">
+          {achievements.map((badge) => (
+            <div className={`achievement ${badge.earned ? 'earned' : ''}`} key={badge.id}>
+              <span className="achievement-icon">
+                <Icon name={badge.icon} size={21} />
+              </span>
+              <div className="achievement-main">
+                <p className="achievement-title">{badge.title}</p>
+                <p className="achievement-desc">{badge.description}</p>
+                <div className="progress-track achievement-track">
+                  <div className="progress-fill" style={{ width: `${badge.progress}%` }} />
+                </div>
+                <p className="achievement-progress">
+                  {badge.earned
+                    ? 'Earned'
+                    : `${badgeValue(badge, badge.value)} / ${badgeValue(badge, badge.target)}`}
+                </p>
+              </div>
+              {badge.earned && (
+                <span className="achievement-check" aria-label="Earned">
+                  <Icon name="check" size={16} />
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   )

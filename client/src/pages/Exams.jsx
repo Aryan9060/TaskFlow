@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import Icon from '../components/Icon.jsx'
 import { getExams, createExam, updateExam, deleteExam } from '../services/exams.js'
 import { getSubjects } from '../services/subjects.js'
@@ -7,6 +7,31 @@ import { daysUntil, formatDateTime } from '../utils/format.js'
 const EMPTY_FORM = { title: '', subject: '', date: '', time: '09:00', location: '', notes: '' }
 
 const TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone
+
+const REVISION_STEPS = [
+  'Map the syllabus',
+  'Review core topics',
+  'Practice past questions',
+  'Rewrite weak notes',
+  'Final recap',
+]
+
+// Suggests up to five 45-minute revision blocks on the days leading up to
+// an exam, always ending with a recap the day before.
+function buildRevisionPlan(exam) {
+  const days = daysUntil(exam.examDate)
+  if (days < 0) return []
+
+  const count = Math.max(1, Math.min(5, days))
+  const steps = REVISION_STEPS.slice(-count)
+
+  return steps.map((focus, index) => {
+    const date = new Date()
+    date.setHours(18, 0, 0, 0)
+    date.setDate(date.getDate() + (days - count + index))
+    return { focus, date }
+  })
+}
 
 // Converts a stored exam timestamp into local date/time input values.
 function toDraft(exam) {
@@ -182,6 +207,7 @@ export default function Exams() {
   const [formError, setFormError] = useState('')
   const [saving, setSaving] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
+  const [planExamId, setPlanExamId] = useState(null)
 
   // Loads exams and subjects in parallel.
   const loadExams = async () => {
@@ -260,9 +286,12 @@ export default function Exams() {
   const renderExam = (exam) => {
     const date = new Date(exam.examDate)
     const countdown = countdownMeta(exam.examDate)
+    const isUpcoming = daysUntil(exam.examDate) >= 0
+    const plan = planExamId === exam._id ? buildRevisionPlan(exam) : null
 
     return (
-      <div className="row-item exam-row" key={exam._id}>
+      <Fragment key={exam._id}>
+        <div className="row-item exam-row">
         <div className="exam-date" aria-hidden="true">
           <span className="exam-day">{date.getDate()}</span>
           <span className="exam-month">
@@ -288,6 +317,18 @@ export default function Exams() {
         <span className={`badge ${countdown.className}`}>{countdown.label}</span>
 
         <div className="row-actions">
+          {isUpcoming && (
+            <button
+              type="button"
+              className={`icon-btn ${planExamId === exam._id ? 'active' : ''}`}
+              aria-label={`Revision plan for ${exam.title}`}
+              aria-expanded={planExamId === exam._id}
+              title="Revision plan"
+              onClick={() => setPlanExamId((current) => (current === exam._id ? null : exam._id))}
+            >
+              <Icon name="calendar" size={16} />
+            </button>
+          )}
           <button
             type="button"
             className="icon-btn"
@@ -316,7 +357,31 @@ export default function Exams() {
             </button>
           )}
         </div>
-      </div>
+        </div>
+
+        {plan && (
+          <div className="revision-plan">
+            <p className="revision-plan-title">
+              <Icon name="chart" size={16} /> {plan.length}-step revision plan · 45 minutes each, 6:00 pm
+            </p>
+            <ul className="revision-plan-list">
+              {plan.map((block) => (
+                <li key={block.focus}>
+                  <span className="badge badge-neutral">
+                    {block.date.toLocaleDateString('en-US', {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </span>
+                  <span>{block.focus}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="field-hint">Suggested times — shuffle them to fit your week.</p>
+          </div>
+        )}
+      </Fragment>
     )
   }
 

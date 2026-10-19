@@ -40,7 +40,7 @@ const taskFields = {
   priority: z.enum(['low', 'medium', 'high'], 'Invalid priority'),
   dueDate,
   estimatedMinutes,
-  recurrence: z.enum(['none', 'daily', 'weekly'], 'Invalid recurrence'),
+  recurrence: z.enum(['none', 'daily', 'weekly', 'monthly'], 'Invalid recurrence'),
 }
 
 // Fields accepted when creating a task or assignment

@@ -28,6 +28,27 @@ export function dayKey(date) {
   return `${year}-${month}-${day}`
 }
 
+// Advances a date by one recurrence interval. Monthly dates clamp to the
+// last day of the target month (Jan 31 -> Feb 28), which a naive setMonth
+// would roll over into March.
+export function nextDueDate(dateInput, recurrence) {
+  const date = new Date(dateInput)
+
+  if (recurrence === 'daily') {
+    date.setDate(date.getDate() + 1)
+  } else if (recurrence === 'weekly') {
+    date.setDate(date.getDate() + 7)
+  } else if (recurrence === 'monthly') {
+    const day = date.getDate()
+    date.setDate(1)
+    date.setMonth(date.getMonth() + 1)
+    const daysInTargetMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
+    date.setDate(Math.min(day, daysInTargetMonth))
+  }
+
+  return date
+}
+
 // Builds an empty chart series for the last n days, oldest first:
 // [{ day: 'Mon', date: '2026-10-18', minutes: 0 }, ...]
 export function buildDaySeries(numberOfDays) {

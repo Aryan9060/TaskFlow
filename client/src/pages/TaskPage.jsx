@@ -4,6 +4,7 @@ import TaskForm from '../components/TaskForm.jsx'
 import TaskList from '../components/TaskList.jsx'
 import { getTasks, createTask, updateTask, deleteTask } from '../services/tasks.js'
 import { getSubjects } from '../services/subjects.js'
+import { shortDate } from '../utils/format.js'
 
 // Page copy and behaviour differences between the two list types.
 const PAGE_META = {
@@ -43,6 +44,7 @@ export default function TaskPage({ kind }) {
   const [subjects, setSubjects] = useState([])
   const [error, setError] = useState('')
   const [actionError, setActionError] = useState('')
+  const [notice, setNotice] = useState('')
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -130,6 +132,7 @@ export default function TaskPage({ kind }) {
   // Creates or updates depending on whether the edit target has an id.
   const handleSubmit = async (payload) => {
     setFormError('')
+    setNotice('')
     setSaving(true)
     try {
       if (formState.editing?._id) {
@@ -149,12 +152,18 @@ export default function TaskPage({ kind }) {
   // Toggles between completed and to-do straight from the list.
   const handleToggle = async (task) => {
     setActionError('')
+    setNotice('')
     setTogglingId(task._id)
     try {
       const data = await updateTask(task._id, {
         status: task.status === 'completed' ? 'todo' : 'completed',
       })
       setTasks((prev) => prev.map((item) => (item._id === task._id ? data.data.task : item)))
+      if (data.data.nextOccurrence) {
+        setNotice(
+          `Completed — the next ${kind} is scheduled for ${shortDate(data.data.nextOccurrence.dueDate)}.`
+        )
+      }
     } catch (err) {
       setActionError(err.response?.data?.message || `Could not update the ${kind}.`)
     } finally {
@@ -165,6 +174,7 @@ export default function TaskPage({ kind }) {
   // Deletes after the inline confirmation.
   const handleDelete = async (task) => {
     setActionError('')
+    setNotice('')
     try {
       await deleteTask(task._id)
       setConfirmDeleteId(null)
@@ -199,6 +209,12 @@ export default function TaskPage({ kind }) {
       {actionError && (
         <div className="alert alert-error" role="alert">
           {actionError}
+        </div>
+      )}
+
+      {notice && (
+        <div className="alert alert-success" role="status">
+          {notice}
         </div>
       )}
 

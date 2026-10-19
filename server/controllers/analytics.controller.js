@@ -5,6 +5,7 @@ import { buildDaySeries, dayKey, daysAgo } from '../utils/dates.js'
 
 const SUBJECT_SNAPSHOT = 'name code color'
 const MONTH_DAYS = 30
+const HEATMAP_DAYS = 84
 const DEFAULT_WEEKLY_GOAL = 600
 
 // Turns per-kind status rows into completed/pending totals and a percentage.
@@ -48,8 +49,10 @@ export async function getAnalyticsSummary(req, res) {
   // One parallel round: recent sessions for totals, an aggregation for
   // subject shares, and an aggregation for task/assignment status counts.
   const [recentSessions, subjectRows, kindStatusRows] = await Promise.all([
+    // 84 days powers the heatmap; the 30-day totals are filtered in memory
+    // so both views share one query.
     StudySession.find(
-      { owner, startedAt: { $gte: daysAgo(MONTH_DAYS - 1) } },
+      { owner, startedAt: { $gte: daysAgo(HEATMAP_DAYS - 1) } },
       { startedAt: 1, durationMinutes: 1 }
     ),
     StudySession.aggregate([
@@ -69,19 +72,31 @@ export async function getAnalyticsSummary(req, res) {
     ]),
   ])
 
-  // Bucket recent sessions into the weekly chart and rolling totals.
+  // Bucket sessions into the 12-week heatmap, the weekly chart, and the
+  // rolling 30-day totals in one pass.
   const weekly = buildDaySeries(7)
+  const heatmap = buildDaySeries(HEATMAP_DAYS)
   const entryByDate = new Map(weekly.map((entry) => [entry.date, entry]))
+  const heatmapByDate = new Map(heatmap.map((entry) => [entry.date, entry]))
+  const monthStart = daysAgo(MONTH_DAYS - 1)
   const today = dayKey(new Date())
   let todayMinutes = 0
   let monthMinutes = 0
+  let monthSessionCount = 0
 
   for (const session of recentSessions) {
     const date = dayKey(session.startedAt)
-    monthMinutes += session.durationMinutes
+
+    if (session.startedAt >= monthStart) {
+      monthMinutes += session.durationMinutes
+      monthSessionCount += 1
+    }
     if (date === today) todayMinutes += session.durationMinutes
-    const entry = entryByDate.get(date)
-    if (entry) entry.minutes += session.durationMinutes
+
+    const weekEntry = entryByDate.get(date)
+    if (weekEntry) weekEntry.minutes += session.durationMinutes
+    const heatEntry = heatmapByDate.get(date)
+    if (heatEntry) heatEntry.minutes += session.durationMinutes
   }
 
   const weekMinutes = weekly.reduce((sum, day) => sum + day.minutes, 0)
@@ -118,9 +133,10 @@ export async function getAnalyticsSummary(req, res) {
         todayMinutes,
         weekMinutes,
         monthMinutes,
-        sessionCount: recentSessions.length,
+        sessionCount: monthSessionCount,
       },
       weekly,
+      heatmap,
       distribution,
       completion: summariseCompletion(kindStatusRows),
       goal: {
