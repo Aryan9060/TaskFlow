@@ -6,6 +6,9 @@ import Dashboard from './pages/Dashboard.jsx'
 import Login from './pages/Login.jsx'
 import Register from './pages/Register.jsx'
 import Profile from './pages/Profile.jsx'
+import Subjects from './pages/Subjects.jsx'
+import Tasks from './pages/Tasks.jsx'
+import Assignments from './pages/Assignments.jsx'
 import PlaceholderPage from './pages/PlaceholderPage.jsx'
 import NotFound from './pages/NotFound.jsx'
 
@@ -22,9 +25,9 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           <Route index element={<Dashboard />} />
-          <Route path="tasks" element={<PlaceholderPage title="My Tasks" phase={5} />} />
-          <Route path="assignments" element={<PlaceholderPage title="Assignments" phase={5} />} />
-          <Route path="subjects" element={<PlaceholderPage title="Subjects" phase={4} />} />
+          <Route path="tasks" element={<Tasks />} />
+          <Route path="assignments" element={<Assignments />} />
+          <Route path="subjects" element={<Subjects />} />
           <Route path="exams" element={<PlaceholderPage title="Exam Planner" phase={6} />} />
           <Route path="calendar" element={<PlaceholderPage title="Calendar" phase={6} />} />
           <Route path="timer" element={<PlaceholderPage title="Study Timer" phase={7} />} />

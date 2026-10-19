@@ -4,6 +4,9 @@ import cookieParser from 'cookie-parser'
 import healthRoutes from './routes/health.routes.js'
 import authRoutes from './routes/auth.routes.js'
 import userRoutes from './routes/user.routes.js'
+import dashboardRoutes from './routes/dashboard.routes.js'
+import subjectRoutes from './routes/subject.routes.js'
+import taskRoutes from './routes/task.routes.js'
 
 const app = express()
 
@@ -14,6 +17,9 @@ app.use(cookieParser())
 app.use('/api/health', healthRoutes)
 app.use('/api/auth', authRoutes)
 app.use('/api/users', userRoutes)
+app.use('/api/dashboard', dashboardRoutes)
+app.use('/api/subjects', subjectRoutes)
+app.use('/api/tasks', taskRoutes)
 
 // 404 handler for any unmatched route
 app.use((req, res) => {
