@@ -44,7 +44,7 @@ export async function updateExam(req, res) {
     }
   }
 
-  for (const field of ['title', 'examDate', 'subject', 'location', 'notes']) {
+  for (const field of ['title', 'examDate', 'subject', 'score', 'location', 'notes']) {
     if (field in req.body) exam[field] = req.body[field]
   }
 

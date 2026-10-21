@@ -14,10 +14,11 @@ export async function getDashboardSummary(req, res) {
 
   const [dueToday, overdue, statusCounts, upcomingExams, recentSessions, weekSessions, subjectCount] =
     await Promise.all([
-      // Open work due today (tasks + assignments)
-      Task.countDocuments({ owner, status: { $ne: 'completed' }, dueDate: { $gte: today, $lt: daysAgo(-1) } }),
+      // Open work due today (tasks + assignments). Cancelled work is not
+      // outstanding, so it never counts toward due/overdue/open totals.
+      Task.countDocuments({ owner, status: { $nin: ['completed', 'cancelled'] }, dueDate: { $gte: today, $lt: daysAgo(-1) } }),
       // Open work past its due date
-      Task.countDocuments({ owner, status: { $ne: 'completed' }, dueDate: { $lt: today } }),
+      Task.countDocuments({ owner, status: { $nin: ['completed', 'cancelled'] }, dueDate: { $lt: today } }),
       // Totals per status for the summary cards
       Task.aggregate([
         { $match: { owner } },

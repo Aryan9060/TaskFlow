@@ -8,18 +8,22 @@ const MONTH_DAYS = 30
 const HEATMAP_DAYS = 84
 const DEFAULT_WEEKLY_GOAL = 600
 
-// Turns per-kind status rows into completed/pending totals and a percentage.
-// A null rate means "no data yet" so the UI can show an empty state.
+// Turns per-kind status rows into completed/pending/cancelled totals and a
+// percentage. Cancelled work sits in its own bucket and is excluded from the
+// rate, so cancelling never lowers or inflates completion. A null rate means
+// "no data yet" so the UI can show an empty state.
 function summariseCompletion(rows) {
   const buckets = {
-    task: { completed: 0, pending: 0 },
-    assignment: { completed: 0, pending: 0 },
+    task: { completed: 0, pending: 0, cancelled: 0 },
+    assignment: { completed: 0, pending: 0, cancelled: 0 },
   }
 
   for (const row of rows) {
     const kind = row._id?.kind === 'assignment' ? 'assignment' : 'task'
     if (row._id?.status === 'completed') {
       buckets[kind].completed += row.count
+    } else if (row._id?.status === 'cancelled') {
+      buckets[kind].cancelled += row.count
     } else {
       buckets[kind].pending += row.count
     }
@@ -33,6 +37,7 @@ function summariseCompletion(rows) {
         {
           completed: counts.completed,
           pending: counts.pending,
+          cancelled: counts.cancelled,
           total,
           rate: total > 0 ? Math.round((counts.completed / total) * 100) : null,
         },

@@ -40,7 +40,7 @@ const taskFields = {
     .max(120, 'Title is too long'),
   description: z.string().trim().max(2000, 'Description is too long'),
   subject,
-  status: z.enum(['todo', 'in-progress', 'completed'], 'Invalid status'),
+  status: z.enum(['todo', 'in-progress', 'completed', 'cancelled'], 'Invalid status'),
   priority: z.enum(['low', 'medium', 'high'], 'Invalid priority'),
   dueDate,
   estimatedMinutes,

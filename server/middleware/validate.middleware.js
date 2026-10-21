@@ -13,3 +13,21 @@ export function validate(schema) {
     next()
   }
 }
+
+// Same contract as validate() but for query strings, so GET endpoints can
+// reject bad filters (dates, ranges) before any database work happens. The
+// parsed values land on req.validatedQuery because Express 5 exposes
+// req.query as a read-only getter that cannot be reassigned.
+export function validateQuery(schema) {
+  return (req, res, next) => {
+    const result = schema.safeParse(req.query)
+
+    if (!result.success) {
+      const message = result.error.issues.map((issue) => issue.message).join(' ')
+      return res.status(400).json({ success: false, message })
+    }
+
+    req.validatedQuery = result.data
+    next()
+  }
+}
