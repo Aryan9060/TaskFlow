@@ -25,15 +25,27 @@ Built as an MCA portfolio project.
 - **Accounts** — register, log in, log out, profile and study preferences.
 - **Dashboard** — today's workload, upcoming exams, weekly study chart, reminders.
 - **Tasks & assignments** — CRUD, filters, search, sorting, priorities, deadlines,
-  completion tracking, and daily/weekly/monthly recurring tasks.
+  completion tracking, daily/weekly/monthly recurring tasks, and a `cancelled` status
+  that is excluded from all completion metrics.
+- **Collaboration** — study groups with invitations and owner/admin/member roles;
+  per-assignee task assignments with a reviewable lifecycle (pending → accepted →
+  in progress → submitted → completed / needs revision, plus decline and cancel);
+  task comments; a server-side append-only activity history; and a per-user
+  notification inbox. Task privacy is strict: only the creator and explicitly
+  assigned users can see a task — group membership never grants access.
 - **Subjects** — color-coded subjects with archive support and safe deletion rules.
-- **Exams** — countdown badges, create/edit/delete, and a generated revision plan for
-  upcoming exams.
+- **Exams** — countdown badges, create/edit/delete (including an optional 0–100
+  score for graded exams), and a generated revision plan for upcoming exams.
 - **Study timer** — Pomodoro-style focus/break timer that survives refreshes, saves one
   session per completed focus block, and uses the user's preferred durations.
 - **Analytics & goals** — daily/weekly/30-day totals, 12-week heatmap, study distribution,
-  task completion rates, achievements, and an editable weekly study goal.
-- **Export** — download study sessions or tasks as RFC 4180-compliant CSV files.
+  task completion rates, achievements, and an editable weekly study goal. The insights
+  endpoint adds on-time rates, overdue/cancelled counts, weekly task trends, study time
+  per day/subject, acceptance and submission rates with turnaround averages, and average
+  exam scores per subject — all behind `from`/`to` date filters.
+- **Export** — RFC 4180-compliant CSV with formula-injection protection for sessions,
+  tasks, assignments, and per-task activity, plus a multi-sheet XLSX workbook generated
+  with exceljs. Both formats run the exact same authorization queries.
 - **Themes** — Notebook (default), Midnight, Campus, and Blueprint; the choice persists
   in `localStorage`.
 
@@ -42,7 +54,7 @@ Built as an MCA portfolio project.
 | Layer      | Tools                                                              |
 | ---------- | ------------------------------------------------------------------ |
 | Frontend   | React 19, Vite 8, React Router 7, Axios, Recharts, plain CSS       |
-| Backend    | Node.js, Express 5, Mongoose 9, Zod 4, JWT, bcryptjs               |
+| Backend    | Node.js, Express 5, Mongoose 9, Zod 4, JWT, bcryptjs, exceljs     |
 | Database   | MongoDB 7 (Docker for local development; Atlas for production)     |
 | Security   | helmet, express-rate-limit, express-mongo-sanitize, httpOnly cookie |
 | Testing    | Node's built-in test runner (`node:test`), Supertest                |
@@ -154,12 +166,25 @@ dropped before and after each run, so development data is untouched. It requires
 
 Covered automatically:
 
-- date helpers and monthly recurrence clamping (Jan 31 → Feb 28)
-- CSV quoting/escaping rules
+- date helpers, monthly recurrence clamping (Jan 31 → Feb 28), and analytics math
+  (completion/on-time rates, assignment acceptance and submission rates, trends, exam
+  score averages — including that cancelled work is excluded everywhere)
+- CSV quoting/escaping rules and formula-injection neutralization
 - registration validation, duplicate email, login, logout, protected routes
 - profile and weekly-goal validation
 - task CRUD, invalid input, and ownership boundaries (another user gets 404)
 - recurring task idempotency (one successor per completion)
+- groups: invitations, accept/decline, role changes, removal rules, ownership transfer
+- assignments: the full lifecycle, terminal-state rules, review permissions, and that
+  removing an assignment revokes access
+- task privacy: assignees can read but not edit, group admins without an assignment get
+  404 everywhere, search never widens visibility
+- activity recording (success ⇒ logged, failures log nothing) and cascade deletion
+- notifications: delivery to the right participant, unread filtering, mark read/all read
+- insights: snapshot counts and rates, date-range trimming, cross-user isolation, and
+  rejection of invalid ranges
+- exports: per-format visibility, CSV injection guards, workbook shape, and 404 gating
+  for other users' task activity
 - MongoDB operator stripping and malformed JSON handling
 - rate limiting on authentication endpoints
 
@@ -209,8 +234,18 @@ httpOnly cookie.
 | DELETE | `/api/subjects/:id`         | Delete subject (only if unused)      |
 | GET    | `/api/tasks`                | List/filter/search/sort tasks        |
 | POST   | `/api/tasks`                | Create task or assignment            |
-| PATCH  | `/api/tasks/:id`            | Edit/complete task                   |
-| DELETE | `/api/tasks/:id`            | Delete task                          |
+| GET    | `/api/tasks/:id`            | Task detail (creator + assignees)    |
+| PATCH  | `/api/tasks/:id`            | Edit/complete/cancel task            |
+| DELETE | `/api/tasks/:id`            | Delete task (cascades, keeps history)|
+| POST   | `/api/tasks/:id/assignments`| Assign a registered user (creator)   |
+| GET    | `/api/tasks/:id/assignments`| List a task's assignments            |
+| PATCH  | `/api/tasks/:id/assignments/:userId` | Assignee lifecycle transition |
+| POST   | `/api/tasks/:id/assignments/:userId/review` | Approve / request changes (creator) |
+| DELETE | `/api/tasks/:id/assignments/:userId` | Remove assignment (creator)  |
+| POST   | `/api/tasks/:id/comments`   | Comment on a task                    |
+| GET    | `/api/tasks/:id/comments`   | List comments (oldest first)         |
+| DELETE | `/api/tasks/:id/comments/:commentId` | Delete (author or creator)   |
+| GET    | `/api/tasks/:id/activity`   | Append-only task history             |
 | GET    | `/api/exams`                | List exams (`?upcoming=true`)        |
 | POST   | `/api/exams`                | Create exam                          |
 | PATCH  | `/api/exams/:id`            | Edit exam                            |
@@ -219,24 +254,85 @@ httpOnly cookie.
 | GET    | `/api/sessions/stats`       | Session aggregates                   |
 | POST   | `/api/sessions`             | Save a completed focus block         |
 | GET    | `/api/analytics/summary`    | Charts, heatmap, completion, goal    |
+| GET    | `/api/analytics/insights`   | Collaboration analytics (`?from&to`) |
+| GET    | `/api/groups`               | My groups with role and member count |
+| POST   | `/api/groups`               | Create group (creator becomes owner) |
+| GET    | `/api/groups/:id`           | Group detail + roster (members only) |
+| PATCH  | `/api/groups/:id`           | Edit group (owner/admin)             |
+| DELETE | `/api/groups/:id`           | Delete group (owner)                 |
+| POST   | `/api/groups/:id/invitations` | Invite by email (admin+)           |
+| GET    | `/api/groups/invitations/mine` | My pending invitations            |
+| POST   | `/api/groups/:id/invitations/accept` | Accept invitation (invitee) |
+| DELETE | `/api/groups/:id/invitations/:userId` | Decline / cancel invitation |
+| PATCH  | `/api/groups/:id/members/:userId` | Change role (owner)             |
+| DELETE | `/api/groups/:id/members/:userId` | Remove member / leave group     |
+| POST   | `/api/groups/:id/transfer`  | Transfer ownership                   |
+| GET    | `/api/assignments/mine`     | My assignments across tasks (`?status=`) |
+| GET    | `/api/notifications`        | My inbox (`?unread=true`)            |
+| PATCH  | `/api/notifications/:id/read` | Mark one read (recipient only)     |
+| POST   | `/api/notifications/read-all` | Mark all read                      |
 | GET    | `/api/reminders`            | Due tasks and upcoming exams         |
 | GET    | `/api/achievements`         | Milestones and progress              |
 | GET    | `/api/export/sessions.csv`  | Download study sessions CSV          |
-| GET    | `/api/export/tasks.csv`     | Download tasks CSV                   |
+| GET    | `/api/export/tasks.csv`     | Download visible tasks CSV           |
+| GET    | `/api/export/assignments.csv` | Download assignment lifecycle CSV  |
+| GET    | `/api/export/activity.csv`  | Download one task's history CSV (`?taskId=`) |
+| GET    | `/api/export/workbook.xlsx` | Download multi-sheet XLSX workbook   |
 
 ## Data model
 
 - **User** — name, unique email, bcrypt password hash, preferences (Pomodoro durations,
   weekly goal).
 - **Subject** — owner, name, code, semester, color, description, archived.
-- **Task** — owner, optional subject, kind (`task`/`assignment`), title, status, priority,
-  due date, estimate, recurrence, completion timestamp, successor link.
-- **Exam** — owner, optional subject, title, date, location, notes.
+- **Task** — owner, optional subject and group context, kind (`task`/`assignment`), title,
+  status (`todo`/`in-progress`/`completed`/`cancelled`), priority, due date, estimate,
+  recurrence, completion timestamp, successor link.
+- **Group** — name, description, owner. **GroupMembership** — one per (group, user) with
+  role (`owner`/`admin`/`member`) and status (`invited`/`active`).
+- **TaskAssignment** — one per (task, assignee) with an independent lifecycle status,
+  lifecycle timestamps, and the latest note. Assignment status is deliberately separate
+  from Task.status: assignees progress through their own work while the task stays under
+  its creator's control.
+- **TaskComment** — task, author, body (1–2000).
+- **ActivityLog** — append-only, server-generated history of task and assignment events
+  with the actor and safe details. It survives task deletion and has no update/delete API.
+- **Notification** — per-user inbox entries (assignment and comment events) with a
+  `readAt` marker.
+- **Exam** — owner, optional subject, title, date, location, notes, optional 0–100 score.
 - **StudySession** — owner, optional subject/task, duration in minutes, start/end times,
   mode.
 
-Every resource is queried with the owner id; a record belonging to another user behaves
-exactly like a missing record (404).
+Every personal resource is queried with the owner id; a record belonging to another user
+behaves exactly like a missing record (404).
+
+## Task privacy model
+
+The single source of truth is `server/services/taskAccess.service.js`:
+
+- A user can **read** a task (detail, assignments, comments, activity, exports) only if
+  they created it **or** a TaskAssignment document names them as assignee.
+- **Group membership — even group-admin status — never grants task access.** A group on a
+  task is context only.
+- **Mutations stay creator-only** (edit, delete, assign, review, cancel, remove).
+- The visibility filter is applied in the database query itself — before sorting,
+  pagination, aggregation, or export — never as an in-memory post-filter.
+- Non-members get 404, not 403, so the existence of a task is never revealed.
+- Actor/creator/author identity always comes from the authenticated session cookie,
+  never from request body fields.
+
+Multi-step actions (task create/update/delete, assignment transitions, reviews, comments)
+run in MongoDB transactions when the deployment supports them and fall back to sequential
+writes otherwise, so no replica set is required — but a successful action and its activity
+entry always commit (or roll back) together.
+
+## Migration notes
+
+No migration is needed from a pre-collaboration database. Every new field is additive
+with a default (`Task.group` defaults to null, `Task.status` keeps existing values,
+`Exam.score` defaults to null), and the new collections (groups, memberships,
+assignments, comments, activity, notifications) start empty. Local development gets
+transactions when MongoDB runs as a single-node replica set; the app degrades gracefully
+to sequential writes on a standalone `mongod`.
 
 ## Security notes
 
@@ -250,6 +346,10 @@ exactly like a missing record (404).
 - Database and server errors pass through one centralized handler; unexpected 500 details
   are hidden in production.
 - Cross-origin requests are restricted to `CLIENT_URL`.
+- Exports are scoped by the same authorization as their endpoints and never include
+  passwords, tokens, emails, or unrelated users' data. CSV cells starting with `= + - @`
+  tab or CR are prefixed with an apostrophe to neutralize spreadsheet formula injection;
+  the XLSX workbook uses typed cells, which cannot execute formulas.
 
 ## Deployment
 
@@ -324,6 +424,16 @@ Talking points for interviews:
   therefore XSS) cannot read it; SameSite and rate limiting reduce CSRF/brute-force risk.
 - **Ownership:** every query includes `owner: req.user._id`, and another user's record
   returns 404 rather than 403 so resource existence is not leaked.
+- **Collaboration privacy:** group membership never grants task access — visibility is
+  creator + explicit assignees only, enforced in the database filter itself. Search, sort,
+  aggregation, and exports all compose with that filter (the search clause merges through
+  `$and` so it can never replace the access `$or`).
+- **Integrity:** multi-step writes run in transactions when available (with a transparent
+  standalone fallback), and activity history is append-only — it survives task deletion,
+  giving an audit trail that users cannot rewrite.
+- **Export safety:** CSV formula injection is neutralized at the cell level, and the XLSX
+  workbook renders from the same authorized queries as the CSV routes, so the formats
+  cannot drift apart.
 - **Validation:** Zod validates on the server; the client adds HTML validation for fast
   feedback but never replaces server checks.
 - **Recurrence:** completing a task spawns its successor and records `nextOccurrenceId`, so
