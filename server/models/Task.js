@@ -6,6 +6,9 @@ const taskSchema = new mongoose.Schema(
   {
     owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     subject: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject', default: null },
+    // Optional group context. Attaching a group never grants access by
+    // itself: the task stays visible only to its creator and assignees.
+    group: { type: mongoose.Schema.Types.ObjectId, ref: 'Group', default: null, index: true },
     kind: { type: String, enum: ['task', 'assignment'], default: 'task', index: true },
     title: { type: String, required: [true, 'Title is required'], trim: true, maxlength: 120 },
     description: { type: String, trim: true, maxlength: 2000, default: '' },

@@ -27,6 +27,10 @@ const subject = z.preprocess(
   (value) => (value === '' ? null : value),
   objectId.nullable()
 )
+const group = z.preprocess(
+  (value) => (value === '' ? null : value),
+  z.string().regex(/^[0-9a-fA-F]{24}$/, 'Group is not valid.').nullable()
+)
 
 const taskFields = {
   title: z
@@ -48,6 +52,7 @@ export const createTaskSchema = z.object({
   ...taskFields,
   description: taskFields.description.optional().default(''),
   subject: subject.optional(),
+  group: group.optional(),
   status: taskFields.status.optional().default('todo'),
   priority: taskFields.priority.optional().default('medium'),
   dueDate: dueDate.optional(),
@@ -61,6 +66,7 @@ export const updateTaskSchema = z.object({
   title: taskFields.title.optional(),
   description: taskFields.description.optional(),
   subject: subject.optional(),
+  group: group.optional(),
   status: taskFields.status.optional(),
   priority: taskFields.priority.optional(),
   dueDate: dueDate.optional(),
