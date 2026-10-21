@@ -6,20 +6,6 @@ wrapped in a hand-drawn "study, on purpose" interface with four switchable theme
 
 Built as an MCA portfolio project.
 
-## Screenshots
-
-![TaskFlow dashboard](docs/screenshots/dashboard.png)
-
-| Tasks | Exam planner with revision plan |
-| --- | --- |
-| ![Tasks](docs/screenshots/tasks.png) | ![Exams](docs/screenshots/exams.png) |
-
-![Analytics and goals](docs/screenshots/analytics.png)
-
-| Mobile dashboard | Midnight theme |
-| --- | --- |
-| ![Mobile dashboard](docs/screenshots/dashboard-mobile.png) | ![Midnight theme](docs/screenshots/dashboard-midnight.png) |
-
 ## Features
 
 - **Accounts** — register, log in, log out, profile and study preferences.
