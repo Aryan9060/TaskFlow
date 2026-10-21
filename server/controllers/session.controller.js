@@ -1,6 +1,6 @@
 import StudySession from '../models/StudySession.js'
-import Task from '../models/Task.js'
 import { validateOwnedSubject } from '../services/subject.service.js'
+import { canAccessTask } from '../services/taskAccess.service.js'
 import { startOfToday, daysAgo } from '../utils/dates.js'
 
 // GET /api/sessions — the 12 most recent study sessions for the user.
@@ -55,8 +55,9 @@ export async function createSession(req, res) {
   }
 
   if (req.body.task) {
-    const task = await Task.findOne({ _id: req.body.task, owner: req.user._id })
-    if (!task) {
+    // Assignees may log sessions on shared tasks, not only the creator.
+    const { hasAccess } = await canAccessTask(req.body.task, req.user._id)
+    if (!hasAccess) {
       return res.status(400).json({ success: false, message: 'Task not found.' })
     }
   }

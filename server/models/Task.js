@@ -12,7 +12,9 @@ const taskSchema = new mongoose.Schema(
     kind: { type: String, enum: ['task', 'assignment'], default: 'task', index: true },
     title: { type: String, required: [true, 'Title is required'], trim: true, maxlength: 120 },
     description: { type: String, trim: true, maxlength: 2000, default: '' },
-    status: { type: String, enum: ['todo', 'in-progress', 'completed'], default: 'todo', index: true },
+    // 'cancelled' marks abandoned work. It is excluded from completion rates
+    // and overdue counts everywhere so giving up never looks like finishing.
+    status: { type: String, enum: ['todo', 'in-progress', 'completed', 'cancelled'], default: 'todo', index: true },
     priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
     dueDate: { type: Date, default: null, index: true },
     estimatedMinutes: { type: Number, min: 0, max: 10080, default: null },

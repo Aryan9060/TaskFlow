@@ -12,6 +12,7 @@ import taskRoutes from './routes/task.routes.js'
 import examRoutes from './routes/exam.routes.js'
 import groupRoutes from './routes/group.routes.js'
 import assignmentRoutes from './routes/assignment.routes.js'
+import notificationRoutes from './routes/notification.routes.js'
 import sessionRoutes from './routes/session.routes.js'
 import analyticsRoutes from './routes/analytics.routes.js'
 import reminderRoutes from './routes/reminder.routes.js'
@@ -48,6 +49,7 @@ app.use('/api/tasks', taskRoutes)
 app.use('/api/exams', examRoutes)
 app.use('/api/groups', groupRoutes)
 app.use('/api/assignments', assignmentRoutes)
+app.use('/api/notifications', notificationRoutes)
 app.use('/api/sessions', sessionRoutes)
 app.use('/api/analytics', analyticsRoutes)
 app.use('/api/reminders', reminderRoutes)

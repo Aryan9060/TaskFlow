@@ -8,8 +8,27 @@ import {
   applyAssignmentStatus,
   TERMINAL_ASSIGNMENT_STATUSES,
 } from '../services/assignment.service.js'
+import { runInTransaction } from '../services/transaction.service.js'
+import { recordActivity } from '../services/activity.service.js'
+import { notifyUsers } from '../services/notification.service.js'
 
 const ASSIGNEE_SNAPSHOT = 'name email'
+
+// Maps a new assignment status to its activity action and notification verb.
+const ACTION_BY_STATUS = {
+  accepted: 'assignment_accepted',
+  declined: 'assignment_declined',
+  in_progress: 'assignment_started',
+  submitted: 'assignment_submitted',
+  cancelled: 'assignment_cancelled',
+}
+const VERB_BY_STATUS = {
+  accepted: 'accepted their assignment on',
+  declined: 'declined their assignment on',
+  in_progress: 'started working on',
+  submitted: 'submitted work for',
+  cancelled: 'cancelled an assignment on',
+}
 
 // Shared gate for the assignment subroutes: the task must exist and the actor
 // must be its creator or an assignee. Group membership alone never passes.
@@ -54,10 +73,28 @@ export async function createAssignment(req, res) {
     return res.status(409).json({ success: false, message: 'That user is already assigned to this task.' })
   }
 
-  const assignment = await TaskAssignment.create({
-    task: task._id,
-    assignee: assignee._id,
-    assignedBy: req.user._id,
+  const assignment = await runInTransaction(async (session) => {
+    const options = session ? { session } : {}
+    const [created] = await TaskAssignment.create(
+      [{ task: task._id, assignee: assignee._id, assignedBy: req.user._id }],
+      options
+    )
+    await recordActivity({
+      taskId: task._id,
+      actorId: req.user._id,
+      action: 'assignment_created',
+      details: { assigneeId: String(assignee._id) },
+      session,
+    })
+    await notifyUsers({
+      userIds: [String(assignee._id)],
+      actorId: req.user._id,
+      type: 'assignment_created',
+      message: `${req.user.name} assigned you "${task.title}"`,
+      taskId: task._id,
+      session,
+    })
+    return created
   })
   await assignment.populate('assignee', ASSIGNEE_SNAPSHOT)
 
@@ -129,9 +166,31 @@ export async function transitionAssignment(req, res) {
     }
   }
 
+  const previousStatus = assignment.status
   applyAssignmentStatus(assignment, next)
   if (req.body.note) assignment.note = req.body.note
-  await assignment.save()
+
+  const assigneeId = String(assignment.assignee._id)
+
+  await runInTransaction(async (session) => {
+    await assignment.save({ session })
+    await recordActivity({
+      taskId: task._id,
+      actorId: req.user._id,
+      action: ACTION_BY_STATUS[next],
+      details: { from: previousStatus, to: next, assigneeId },
+      session,
+    })
+    // Assignee moves inform the creator; a creator cancellation informs the assignee.
+    await notifyUsers({
+      userIds: next === 'cancelled' ? [assigneeId] : [String(task.owner)],
+      actorId: req.user._id,
+      type: next === 'cancelled' ? 'assignment_cancelled' : 'assignment_updated',
+      message: `${req.user.name} ${VERB_BY_STATUS[next]} "${task.title}"`,
+      taskId: task._id,
+      session,
+    })
+  })
 
   res.status(200).json({ success: true, message: 'Assignment updated.', data: { assignment } })
 }
@@ -157,7 +216,26 @@ export async function reviewAssignment(req, res) {
 
   applyAssignmentStatus(assignment, req.body.decision)
   if (req.body.note) assignment.note = req.body.note
-  await assignment.save()
+
+  const decisionVerb = req.body.decision === 'completed' ? 'approved' : 'requested changes to'
+  await runInTransaction(async (session) => {
+    await assignment.save({ session })
+    await recordActivity({
+      taskId: task._id,
+      actorId: req.user._id,
+      action: 'assignment_reviewed',
+      details: { decision: req.body.decision, assigneeId: String(assignment.assignee._id) },
+      session,
+    })
+    await notifyUsers({
+      userIds: [String(assignment.assignee._id)],
+      actorId: req.user._id,
+      type: 'assignment_reviewed',
+      message: `${req.user.name} ${decisionVerb} "${task.title}"`,
+      taskId: task._id,
+      session,
+    })
+  })
 
   res.status(200).json({ success: true, message: 'Review recorded.', data: { assignment } })
 }
@@ -179,6 +257,24 @@ export async function deleteAssignment(req, res) {
     return res.status(404).json({ success: false, message: 'Assignment not found.' })
   }
 
-  await assignment.deleteOne()
+  await runInTransaction(async (session) => {
+    await assignment.deleteOne({ session })
+    await recordActivity({
+      taskId: task._id,
+      actorId: req.user._id,
+      action: 'assignment_removed',
+      details: { assigneeId: String(assignment.assignee._id) },
+      session,
+    })
+    await notifyUsers({
+      userIds: [String(assignment.assignee._id)],
+      actorId: req.user._id,
+      type: 'assignment_cancelled',
+      message: `${req.user.name} removed an assignment on "${task.title}"`,
+      taskId: task._id,
+      session,
+    })
+  })
+
   res.status(200).json({ success: true, message: 'Assignment removed.' })
 }

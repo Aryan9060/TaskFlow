@@ -7,6 +7,7 @@ import {
   transitionAssignmentSchema,
   reviewAssignmentSchema,
 } from '../validators/assignment.validators.js'
+import { createCommentSchema } from '../validators/comment.validators.js'
 import { listTasks, getTask, createTask, updateTask, deleteTask } from '../controllers/task.controller.js'
 import {
   createAssignment,
@@ -15,6 +16,8 @@ import {
   reviewAssignment,
   deleteAssignment,
 } from '../controllers/assignment.controller.js'
+import { addComment, listComments, deleteComment } from '../controllers/comment.controller.js'
+import { listTaskActivity } from '../controllers/activity.controller.js'
 
 const router = Router()
 
@@ -32,5 +35,9 @@ router.get('/:id/assignments', listTaskAssignments)
 router.patch('/:id/assignments/:userId', validate(transitionAssignmentSchema), transitionAssignment)
 router.post('/:id/assignments/:userId/review', validate(reviewAssignmentSchema), reviewAssignment)
 router.delete('/:id/assignments/:userId', deleteAssignment)
+router.post('/:id/comments', validate(createCommentSchema), addComment)
+router.get('/:id/comments', listComments)
+router.delete('/:id/comments/:commentId', deleteComment)
+router.get('/:id/activity', listTaskActivity)
 
 export default router
